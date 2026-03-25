@@ -2,6 +2,8 @@
 import { useState, useEffect, useRef, createContext, useContext } from "react";
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import { TypeAnimation } from 'react-type-animation';
+import pb, { dishesAPI, reviewsAPI, featuresAPI, hoursAPI, reservationsAPI, ordersAPI } from './lib/pocketbase';
+import { Notification } from './components/Notification';
 
 // Импорт иконок из react-icons
 import {
@@ -129,8 +131,39 @@ function useCart() {
   return context;
 }
 
-// ============ ДАННЫЕ ============
-const dishes = [
+// ============ ХУК ДЛЯ ЗАГРУЗКИ ДАННЫХ ============
+function useDataLoader() {
+  const [dishes, setDishes] = useState([]);
+  const [reviewsData, setReviewsData] = useState([]);
+  const [featuresData, setFeaturesData] = useState([]);
+  const [hoursData, setHoursData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadAllData = async () => {
+      setLoading(true);
+      const [dishesList, reviewsList, featuresList, hoursList] = await Promise.all([
+        dishesAPI.getAll(),
+        reviewsAPI.getAll(),
+        featuresAPI.getAll(),
+        hoursAPI.getAll()
+      ]);
+      
+      setDishes(dishesList);
+      setReviewsData(reviewsList);
+      setFeaturesData(featuresList);
+      setHoursData(hoursList);
+      setLoading(false);
+    };
+    
+    loadAllData();
+  }, []);
+
+  return { dishes, reviewsData, featuresData, hoursData, loading };
+}
+
+// ============ ДАННЫЕ (FALLBACK НА СЛУЧАЙ ОШИБКИ) ============
+const fallbackDishes = [
   {
     id: 1,
     name: "Плов по-домашнему",
@@ -184,65 +217,46 @@ const dishes = [
     tag: "Выпечка",
     image: "https://images.unsplash.com/photo-1763141437626-57697f56e9c2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=600",
     category: "bread"
-  },
-  {
-    id: 7,
-    name: "Манты с тыквой",
-    description: "Паровые манты с начинкой из тыквы и курдючного жира",
-    price: "38 000 сум",
-    tag: "Рекомендуем",
-    image: "https://images.unsplash.com/photo-1646999415436-fa7fa11cb8c3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=600",
-    category: "main"
-  },
-  {
-    id: 8,
-    name: "Самса с курицей",
-    description: "Хрустящая самса из слоеного теста с сочной курицей",
-    price: "15 000 сум",
-    tag: "Закуска",
-    image: "https://images.unsplash.com/photo-1771285119318-b342c3ecc51c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=600",
-    category: "snack"
-  },
-  {
-    id: 9,
-    name: "Салат Ачик-Чучук",
-    description: "Традиционный узбекский салат из помидоров, лука и зелени",
-    price: "18 000 сум",
-    tag: "Салат",
-    image: "https://images.unsplash.com/photo-1761315631465-d1123c77ea72?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=600",
-    category: "salad"
   }
 ];
 
-const extendedMenuItems = [
-  ...dishes,
-  {
-    id: 10,
-    name: "Чай с горными травами",
-    description: "Ароматный чай из горных трав с медом",
-    price: "8 000 сум",
-    tag: "Напиток",
-    image: "https://images.unsplash.com/photo-1674749232554-2ac15ced7954?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=600",
-    category: "drink"
-  },
-  {
-    id: 11,
-    name: "Казы карта",
-    description: "Традиционное конское мясо с жировой прослойкой",
-    price: "95 000 сум",
-    tag: "Деликатес",
-    image: "https://images.unsplash.com/photo-1646999415436-fa7fa11cb8c3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=600",
-    category: "main"
-  },
-  {
-    id: 12,
-    name: "Шурпа из баранины",
-    description: "Наваристый суп с бараниной и овощами",
-    price: "45 000 сум",
-    tag: "Суп",
-    image: "https://images.unsplash.com/photo-1763905145526-6a5e868acc40?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=600",
-    category: "soup"
-  }
+const fallbackReviews = [
+  { id: 1, 
+    name: "Зафар Исмоилов", 
+    role: "Постоянный гость", 
+    text: "AJR Family — это наш семейный ресторан уже 5 лет. Каждый раз плов готовится идеально — нежное мясо, рассыпчатый рис. Персонал всегда приветливый и внимательный. Рекомендую всей семьёй!", 
+    rating: 5, 
+    avatar: "З", 
+    color: "#45C14A" },
+  { id: 2, 
+    name: "Нилуфар Каримова", 
+    role: "Отмечала день рождения", 
+    text: "Отмечали день рождения мамы — всё было просто великолепно! Красивое оформление стола, вкуснейший шашлык, и торт... отдельный восторг. Спасибо команде за незабываемый вечер!", 
+    rating: 5, 
+    avatar: "Н", 
+    color: "#C9A86A" },
+  { id: 3, 
+    name: "Бехзод Рашидов", 
+    role: "Пришёл с коллегами", 
+    text: "Корпоратив прошёл на высшем уровне. Вместительный зал, отличное меню на любой вкус, быстрое обслуживание. Атмосфера очень тёплая — не хотелось уходить. Обязательно вернёмся!", 
+    rating: 5, 
+    avatar: "Б", 
+    color: "#45C14A" }
+];
+
+const fallbackFeatures = [
+  { icon: Leaf, title: "Свежие продукты", desc: "Только отборные местные продукты с ферм. Никакой заморозки — только свежее", color: "#45C14A" },
+  { icon: BookOpen, title: "Семейные рецепты", desc: "Рецепты передаются из поколения в поколение. Вкус детства в каждом блюде", color: "#C9A86A" },
+  { icon: Home, title: "Уютная атмосфера", desc: "Тёплый интерьер и гостеприимный персонал создают атмосферу домашнего уюта", color: "#45C14A" },
+  { icon: Heart, title: "Дружелюбный сервис", desc: "Каждый гость — как член нашей семьи. Мы заботимся о каждой детали", color: "#C9A86A" },
+  { icon: Star, title: "Традиционный вкус", desc: "Аутентичные рецепты без компромиссов. Настоящий вкус восточной кухни", color: "#45C14A" },
+  { icon: ChefHat, title: "Высококлассная кухня", desc: "Опытные повара с многолетней практикой готовят каждое блюдо с мастерством", color: "#C9A86A" }
+];
+
+const fallbackHours = [
+  { day: "Понедельник — Пятница", time: "09:00 — 00:00" },
+  { day: "Суббота — Воскресенье", time: "09:00 — 00:00" },
+  { day: "Праздничные дни", time: "09:00 — 00:00" }
 ];
 
 const menuCategoriesForPage = [
@@ -261,36 +275,6 @@ const aboutStats = [
   { value: "50K+", label: "Довольных гостей" },
   { value: "120+", label: "Блюд в меню" },
   { value: "4.6★", label: "Рейтинг" },
-];
-
-const features = [
-  { icon: Leaf, title: "Свежие продукты", desc: "Только отборные местные продукты с ферм. Никакой заморозки — только свежее", color: "#45C14A" },
-  { icon: BookOpen, title: "Семейные рецепты", desc: "Рецепты передаются из поколения в поколение. Вкус детства в каждом блюде", color: "#C9A86A" },
-  { icon: Home, title: "Уютная атмосфера", desc: "Тёплый интерьер и гостеприимный персонал создают атмосферу домашнего уюта", color: "#45C14A" },
-  { icon: Heart, title: "Дружелюбный сервис", desc: "Каждый гость — как член нашей семьи. Мы заботимся о каждой детали", color: "#C9A86A" },
-  { icon: Star, title: "Традиционный вкус", desc: "Аутентичные рецепты без компромиссов. Настоящий вкус восточной кухни", color: "#45C14A" },
-  { icon: ChefHat, title: "Высококлассная кухня", desc: "Опытные повара с многолетней практикой готовят каждое блюдо с мастерством", color: "#C9A86A" },
-];
-
-const galleryImages = [
-  { id: 1, src: "https://images.unsplash.com/photo-1743355695042-719d55616657?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=800", alt: "Семейный обед", caption: "Семейный вечер" },
-  { id: 2, src: "https://images.unsplash.com/photo-1646999415436-fa7fa11cb8c3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=600", alt: "Плов", caption: "Наш фирменный плов" },
-  { id: 3, src: "https://images.unsplash.com/photo-1758612798971-a8adb6cba7eb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=800", alt: "Интерьер ресторана", caption: "Наш уютный зал" },
-  { id: 4, src: "https://images.unsplash.com/photo-1771285119318-b342c3ecc51c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=600", alt: "Шашлык", caption: "Шашлык на углях" },
-  { id: 5, src: "https://images.unsplash.com/photo-1580974512170-cc44d4f85fd7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=800", alt: "Семья", caption: "Счастливые моменты" },
-  { id: 6, src: "https://images.unsplash.com/photo-1573123521814-e1f661b10d4c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=700", alt: "Ресторан вечером", caption: "Вечерняя атмосфера" },
-];
-
-const reviews = [
-  { id: 1, name: "Зафар Исмоилов", role: "Постоянный гость", text: "AJR Family — это наш семейный ресторан уже 5 лет. Каждый раз плов готовится идеально — нежное мясо, рассыпчатый рис. Персонал всегда приветливый и внимательный. Рекомендую всей семьёй!", rating: 5, avatar: "З", color: "#45C14A" },
-  { id: 2, name: "Нилуфар Каримова", role: "Отмечала день рождения", text: "Отмечали день рождения мамы — всё было просто великолепно! Красивое оформление стола, вкуснейший шашлык, и торт... отдельный восторг. Спасибо команде за незабываемый вечер!", rating: 5, avatar: "Н", color: "#C9A86A" },
-  { id: 3, name: "Бехзод Рашидов", role: "Пришёл с коллегами", text: "Корпоратив прошёл на высшем уровне. Вместительный зал, отличное меню на любой вкус, быстрое обслуживание. Атмосфера очень тёплая — не хотелось уходить. Обязательно вернёмся!", rating: 5, avatar: "Б", color: "#45C14A" },
-];
-
-const hours = [
-  { day: "Понедельник — Пятница", time: "08:00 — 23:00" },
-  { day: "Суббота — Воскресенье", time: "08:00 — 00:00" },
-  { day: "Праздничные дни", time: "09:00 — 00:00" },
 ];
 
 const navLinks = [
@@ -313,138 +297,198 @@ const INTERIOR_IMAGE = "https://images.unsplash.com/photo-1758612798971-a8adb6cb
 // ============ КОМПОНЕНТ КОРЗИНЫ ============
 function CartDrawer() {
   const { cartItems, removeFromCart, updateQuantity, getTotalPrice, clearCart, isCartOpen, setIsCartOpen } = useCart();
-
-  const formatPrice = (priceStr) => {
-    return priceStr;
-  };
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [notification, setNotification] = useState({ show: false, type: 'success', title: '', message: '' });
 
   const getNumericPrice = (priceStr) => {
     return parseFloat(priceStr.replace(/[^\d]/g, ''));
   };
 
-  const handleOrder = () => {
-    if (cartItems.length === 0) return;
-    alert(`✅ Заказ оформлен! Сумма: ${getTotalPrice().toLocaleString()} сум\nНаши менеджеры свяжутся с вами для подтверждения.`);
-    clearCart();
-    setIsCartOpen(false);
+  const showNotification = (type, title, message) => {
+    setNotification({ show: true, type, title, message });
+    setTimeout(() => {
+      setNotification({ show: false, type: 'success', title: '', message: '' });
+    }, 3000);
+  };
+
+  const handleOrder = async () => {
+    if (cartItems.length === 0) {
+      showNotification('warning', 'Корзина пуста', 'Добавьте блюда перед оформлением заказа');
+      return;
+    }
+
+    setIsProcessing(true);
+
+    try {
+      const orderData = {
+        total_price: getTotalPrice(),
+        items: cartItems.map(item => ({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          image: item.image
+        }))
+      };
+
+      const result = await ordersAPI.create(orderData);
+      
+      if (result.success) {
+        showNotification(
+          'success',
+          'Заказ оформлен! 🎉',
+          `Сумма: ${getTotalPrice().toLocaleString()} сум. Наши менеджеры свяжутся с вами для подтверждения.`
+        );
+        clearCart();
+        setIsCartOpen(false);
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      showNotification(
+        'error',
+        'Ошибка оформления',
+        'Не удалось оформить заказ. Пожалуйста, попробуйте позже.'
+      );
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
-    <AnimatePresence>
-      {isCartOpen && (
-        <>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setIsCartOpen(false)}
-            className="fixed inset-0 bg-black/70 z-[1000]"
-          />
-          <motion.div
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
-            transition={{ type: "spring", damping: 25 }}
-            className="fixed right-0 top-0 h-full w-full max-w-md bg-[#0F1113] border-l border-white/10 z-[1001] shadow-2xl flex flex-col"
-          >
-            <div className="p-6 border-b border-white/10 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#45C14A] to-[#1F6E33] flex items-center justify-center">
-                  <ShoppingCart size={18} color="white" />
-                </div>
-                <h2 className="text-white text-xl font-['Playfair_Display'] font-bold">Корзина</h2>
-                <span className="text-white/40 text-sm">{cartItems.length} {cartItems.length === 1 ? 'блюдо' : cartItems.length < 5 ? 'блюда' : 'блюд'}</span>
-              </div>
-              <button onClick={() => setIsCartOpen(false)} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:text-white transition-colors">
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
-              {cartItems.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-white/5 flex items-center justify-center">
-                    <ShoppingCart size={32} className="text-white/30" />
+    <>
+      <AnimatePresence>
+        {isCartOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsCartOpen(false)}
+              className="fixed inset-0 bg-black/70 z-[1000]"
+            />
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 25 }}
+              className="fixed right-0 top-0 h-full w-full max-w-md bg-[#0F1113] border-l border-white/10 z-[1001] shadow-2xl flex flex-col"
+            >
+              <div className="p-6 border-b border-white/10 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#45C14A] to-[#1F6E33] flex items-center justify-center">
+                    <ShoppingCart size={18} color="white" />
                   </div>
-                  <p className="text-white/40 text-sm">Ваша корзина пуста</p>
-                  <p className="text-white/25 text-xs mt-2">Добавьте блюда из меню</p>
+                  <h2 className="text-white text-xl font-['Playfair_Display'] font-bold">Корзина</h2>
+                  <span className="text-white/40 text-sm">{cartItems.length} {cartItems.length === 1 ? 'блюдо' : cartItems.length < 5 ? 'блюда' : 'блюд'}</span>
                 </div>
-              ) : (
-                cartItems.map((item) => (
-                  <motion.div
-                    key={item.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="bg-white/5 rounded-2xl p-4 border border-white/10"
-                  >
-                    <div className="flex gap-4">
-                      <img src={item.image} alt={item.name} className="w-20 h-20 rounded-xl object-cover" />
-                      <div className="flex-1">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h3 className="text-white font-semibold text-sm">{item.name}</h3>
-                            <span className="text-[#C9A86A] text-xs font-medium">{item.price}</span>
-                          </div>
-                          <button onClick={() => removeFromCart(item.id)} className="text-white/40 hover:text-red-400 transition-colors">
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                        <div className="flex items-center justify-between mt-3">
-                          <div className="flex items-center gap-2 bg-white/10 rounded-xl p-1">
-                            <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="w-7 h-7 rounded-lg flex items-center justify-center text-white/70 hover:bg-[#45C14A]/20 transition-colors">
-                              <Minus size={12} />
+                <button onClick={() => setIsCartOpen(false)} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:text-white transition-colors">
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                {cartItems.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-white/5 flex items-center justify-center">
+                      <ShoppingCart size={32} className="text-white/30" />
+                    </div>
+                    <p className="text-white/40 text-sm">Ваша корзина пуста</p>
+                    <p className="text-white/25 text-xs mt-2">Добавьте блюда из меню</p>
+                  </div>
+                ) : (
+                  cartItems.map((item) => (
+                    <motion.div
+                      key={item.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-white/5 rounded-2xl p-4 border border-white/10"
+                    >
+                      <div className="flex gap-4">
+                        <img src={item.image} alt={item.name} className="w-20 h-20 rounded-xl object-cover" />
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <h3 className="text-white font-semibold text-sm">{item.name}</h3>
+                              <span className="text-[#C9A86A] text-xs font-medium">{item.price}</span>
+                            </div>
+                            <button onClick={() => removeFromCart(item.id)} className="text-white/40 hover:text-red-400 transition-colors">
+                              <Trash2 size={14} />
                             </button>
-                            <span className="text-white text-sm w-6 text-center">{item.quantity}</span>
-                            <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="w-7 h-7 rounded-lg flex items-center justify-center text-white/70 hover:bg-[#45C14A]/20 transition-colors">
-                              <Plus size={12} />
-                            </button>
                           </div>
-                          <span className="text-[#45C14A] text-sm font-semibold">
-                            {(getNumericPrice(item.price) * item.quantity).toLocaleString()} сум
-                          </span>
+                          <div className="flex items-center justify-between mt-3">
+                            <div className="flex items-center gap-2 bg-white/10 rounded-xl p-1">
+                              <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="w-7 h-7 rounded-lg flex items-center justify-center text-white/70 hover:bg-[#45C14A]/20 transition-colors">
+                                <Minus size={12} />
+                              </button>
+                              <span className="text-white text-sm w-6 text-center">{item.quantity}</span>
+                              <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="w-7 h-7 rounded-lg flex items-center justify-center text-white/70 hover:bg-[#45C14A]/20 transition-colors">
+                                <Plus size={12} />
+                              </button>
+                            </div>
+                            <span className="text-[#45C14A] text-sm font-semibold">
+                              {(getNumericPrice(item.price) * item.quantity).toLocaleString()} сум
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </motion.div>
-                ))
-              )}
-            </div>
-
-            {cartItems.length > 0 && (
-              <div className="p-6 border-t border-white/10 bg-white/5">
-                <div className="flex justify-between items-center mb-4">
-                  <span className="text-white/60 text-sm">Итого:</span>
-                  <span className="text-white text-2xl font-['Playfair_Display'] font-bold">{getTotalPrice().toLocaleString()} сум</span>
-                </div>
-                <button
-                  onClick={handleOrder}
-                  className="w-full py-4 rounded-xl bg-gradient-to-r from-[#45C14A] to-[#1F6E33] text-white font-semibold shadow-lg shadow-[#45C14A]/30 hover:-translate-y-0.5 transition-all duration-300"
-                >
-                  Оформить заказ
-                </button>
-                <button
-                  onClick={() => setIsCartOpen(false)}
-                  className="w-full mt-3 py-3 rounded-xl bg-white/10 text-white/70 text-sm font-medium hover:bg-white/20 transition-colors"
-                >
-                  Продолжить покупки
-                </button>
+                    </motion.div>
+                  ))
+                )}
               </div>
-            )}
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+
+              {cartItems.length > 0 && (
+                <div className="p-6 border-t border-white/10 bg-white/5">
+                  <div className="flex justify-between items-center mb-4">
+                    <span className="text-white/60 text-sm">Итого:</span>
+                    <span className="text-white text-2xl font-['Playfair_Display'] font-bold">{getTotalPrice().toLocaleString()} сум</span>
+                  </div>
+                  <button
+                    onClick={handleOrder}
+                    disabled={isProcessing}
+                    className="w-full py-4 rounded-xl bg-gradient-to-r from-[#45C14A] to-[#1F6E33] text-white font-semibold shadow-lg shadow-[#45C14A]/30 hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isProcessing ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Оформление...</span>
+                      </div>
+                    ) : (
+                      'Оформить заказ'
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setIsCartOpen(false)}
+                    className="w-full mt-3 py-3 rounded-xl bg-white/10 text-white/70 text-sm font-medium hover:bg-white/20 transition-colors"
+                  >
+                    Продолжить покупки
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      <Notification
+        isOpen={notification.show}
+        onClose={() => setNotification({ show: false, type: 'success', title: '', message: '' })}
+        type={notification.type}
+        title={notification.title}
+        message={notification.message}
+      />
+    </>
   );
 }
 
 // ============ СТРАНИЦА МЕНЮ ============
-function MenuPage() {
+function MenuPage({ dishes }) {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const { addToCart, getTotalItems, setIsCartOpen } = useCart();
   const [addedItemId, setAddedItemId] = useState(null);
 
-  const filteredItems = extendedMenuItems.filter(item => {
+  const filteredItems = dishes.filter(item => {
     const matchesCategory = selectedCategory === "all" || item.category === selectedCategory;
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.description.toLowerCase().includes(searchQuery.toLowerCase());
@@ -462,7 +506,6 @@ function MenuPage() {
   return (
     <div className="bg-[#0F1113] min-h-screen pt-24 pb-20">
       <div className="max-w-[1280px] mx-auto px-6 md:px-[60px]">
-        {/* Hero Section */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -477,7 +520,6 @@ function MenuPage() {
           </p>
         </motion.div>
 
-        {/* Поиск и фильтры */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -518,7 +560,6 @@ function MenuPage() {
           </div>
         </motion.div>
 
-        {/* Результаты */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredItems.length === 0 ? (
             <div className="col-span-full text-center py-16">
@@ -574,7 +615,6 @@ function MenuPage() {
           )}
         </div>
 
-        {/* Информация о доставке */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -613,7 +653,6 @@ function MenuPage() {
         </motion.div>
       </div>
 
-      {/* Плавающая кнопка корзины */}
       {totalItems > 0 && (
         <motion.button
           initial={{ scale: 0, opacity: 0 }}
@@ -632,9 +671,7 @@ function MenuPage() {
   );
 }
 
-// ============ ОСТАЛЬНЫЕ КОМПОНЕНТЫ ГЛАВНОЙ СТРАНИЦЫ ============
-
-// Замените весь компонент Header на этот:
+// ============ ОСТАЛЬНЫЕ КОМПОНЕНТЫ ============
 
 function Header({ currentPage, onNavigate }) {
   const [scrolled, setScrolled] = useState(false);
@@ -666,10 +703,8 @@ function Header({ currentPage, onNavigate }) {
   };
 
   const totalItems = getTotalItems();
-
-  // Фильтруем навигационные ссылки для разных размеров
-  const fullNavLinks = navLinks; // все ссылки
-  const mediumNavLinks = navLinks.filter(l => l.href === "/" || l.href === "/menu"); // только Главная и Меню
+  const fullNavLinks = navLinks;
+  const mediumNavLinks = navLinks.filter(l => l.href === "/" || l.href === "/menu");
 
   return (
     <motion.header
@@ -680,7 +715,6 @@ function Header({ currentPage, onNavigate }) {
         }`}
     >
       <div className="max-w-[1280px] mx-auto px-6 md:px-[60px] h-20 flex items-center justify-between">
-        {/* Логотип */}
         <button onClick={() => scrollTo("/")} className="flex items-center gap-3 group">
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#45C14A] to-[#1F6E33] flex items-center justify-center overflow-hidden">
             <img
@@ -700,7 +734,6 @@ function Header({ currentPage, onNavigate }) {
           </div>
         </button>
 
-        {/* Навигация для планшетов и выше (768px - 1024px) - только Главная и Меню */}
         <nav className="hidden md:flex lg:hidden items-center gap-6">
           {mediumNavLinks.map((l) => (
             <button
@@ -717,7 +750,6 @@ function Header({ currentPage, onNavigate }) {
           ))}
         </nav>
 
-        {/* Навигация для десктопа (1024px+) - все ссылки */}
         <nav className="hidden lg:flex items-center gap-8">
           {fullNavLinks.map((l) => (
             <button
@@ -734,9 +766,7 @@ function Header({ currentPage, onNavigate }) {
           ))}
         </nav>
 
-        {/* Правая секция с кнопками */}
         <div className="flex items-center gap-2 md:gap-3">
-          {/* Кнопка бронирования */}
           <button
             onClick={() => scrollTo("#reservation")}
             className="px-4 py-2 rounded-full bg-gradient-to-r from-[#45C14A] to-[#1F6E33] text-white text-xs font-semibold tracking-wide hover:scale-105 transition-all duration-300 shadow-lg shadow-[#45C14A]/30"
@@ -744,7 +774,6 @@ function Header({ currentPage, onNavigate }) {
             Забронировать
           </button>
 
-          {/* Кнопка корзины */}
           <button
             onClick={() => setIsCartOpen(true)}
             className="relative p-2 rounded-full hover:bg-white/10 transition-colors"
@@ -757,14 +786,12 @@ function Header({ currentPage, onNavigate }) {
             )}
           </button>
 
-          {/* Кнопка бургер меню - только для мобильных (до 768px) */}
           <button className="md:hidden text-white" onClick={() => setMobileOpen(!mobileOpen)}>
             {mobileOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
       </div>
 
-      {/* Мобильное меню - только для мобильных (до 768px) */}
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
@@ -790,7 +817,6 @@ function Header({ currentPage, onNavigate }) {
   );
 }
 
-// Герой секция
 function Hero() {
   const parallaxRef = useRef(null);
 
@@ -910,7 +936,6 @@ function Hero() {
   );
 }
 
-// Фирменные блюда
 function DishCard({ dish, index }) {
   const [hovered, setHovered] = useState(false);
   const ref = useRef(null);
@@ -971,9 +996,19 @@ function DishCard({ dish, index }) {
   );
 }
 
-function SignatureDishes() {
+function SignatureDishes({ dishes, loading }) {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-100px" });
+
+  if (loading) {
+    return (
+      <section className="bg-[#0F1113] py-24">
+        <div className="text-center">
+          <div className="inline-block w-8 h-8 border-2 border-[#45C14A] border-t-transparent rounded-full animate-spin" />
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section id="dishes" ref={ref} className="bg-[#0F1113] py-24">
@@ -996,7 +1031,6 @@ function SignatureDishes() {
   );
 }
 
-// О нас
 function About() {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-80px" });
@@ -1063,7 +1097,6 @@ function About() {
   );
 }
 
-// Преимущества
 function FeatureCard({ feature, index }) {
   const [hovered, setHovered] = useState(false);
   const ref = useRef(null);
@@ -1098,7 +1131,19 @@ function FeatureCard({ feature, index }) {
   );
 }
 
-function WhyUs() {
+function WhyUs({ features, loading }) {
+  if (loading) {
+    return (
+      <section className="bg-[#111614] py-24">
+        <div className="text-center">
+          <div className="inline-block w-8 h-8 border-2 border-[#45C14A] border-t-transparent rounded-full animate-spin" />
+        </div>
+      </section>
+    );
+  }
+
+  const displayFeatures = features.length > 0 ? features : fallbackFeatures;
+
   return (
     <section className="bg-[#111614] py-24 relative overflow-hidden">
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[radial-gradient(circle,rgba(69,193,74,0.04)_0%,transparent_70%)] pointer-events-none" />
@@ -1115,19 +1160,35 @@ function WhyUs() {
           <p className="text-white/50 text-base font-light max-w-[480px] mx-auto">Каждая деталь продумана, чтобы ваш визит стал незабываемым</p>
         </motion.div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {features.map((f, i) => <FeatureCard key={i} feature={f} index={i} />)}
+          {displayFeatures.map((f, i) => <FeatureCard key={i} feature={f} index={i} />)}
         </div>
       </div>
     </section>
   );
 }
 
-// Отзывы
-function Testimonials() {
+function Testimonials({ reviews, loading }) {
   const [current, setCurrent] = useState(0);
-  const visible = [reviews[current % reviews.length], reviews[(current + 1) % reviews.length], reviews[(current + 2) % reviews.length]];
-  const prev = () => setCurrent((c) => (c - 1 + reviews.length) % reviews.length);
-  const next = () => setCurrent((c) => (c + 1) % reviews.length);
+
+  if (loading) {
+    return (
+      <section className="bg-gradient-to-b from-[#111614] to-[#0F1113] py-24">
+        <div className="text-center">
+          <div className="inline-block w-8 h-8 border-2 border-[#45C14A] border-t-transparent rounded-full animate-spin" />
+        </div>
+      </section>
+    );
+  }
+
+  const displayReviews = reviews.length > 0 ? reviews : fallbackReviews;
+  const visible = [
+    displayReviews[current % displayReviews.length],
+    displayReviews[(current + 1) % displayReviews.length],
+    displayReviews[(current + 2) % displayReviews.length]
+  ];
+  const prev = () => setCurrent((c) => (c - 1 + displayReviews.length) % displayReviews.length);
+  const next = () => setCurrent((c) => (c + 1) % displayReviews.length);
+  const avgRating = (displayReviews.reduce((sum, r) => sum + r.rating, 0) / displayReviews.length).toFixed(1);
 
   return (
     <section id="reviews" className="bg-gradient-to-b from-[#111614] to-[#0F1113] py-24 relative overflow-hidden">
@@ -1153,7 +1214,7 @@ function Testimonials() {
         >
           <div className="inline-flex items-center gap-3 bg-[#C9A86A]/10 border border-[#C9A86A]/30 rounded-full px-7 py-3">
             <div className="flex gap-0.5">{[...Array(5)].map((_, i) => (<Star key={i} size={16} fill="#C9A86A" color="#C9A86A" />))}</div>
-            <span className="text-[#C9A86A] font-['Playfair_Display'] text-lg font-bold">4.9</span>
+            <span className="text-[#C9A86A] font-['Playfair_Display'] text-lg font-bold">{avgRating}</span>
             <span className="text-white/50 text-xs">средний рейтинг</span>
           </div>
         </motion.div>
@@ -1188,16 +1249,62 @@ function Testimonials() {
   );
 }
 
-// Бронирование
 function Reservation() {
   const [submitted, setSubmitted] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [notification, setNotification] = useState({ show: false, type: 'success', title: '', message: '' });
   const [form, setForm] = useState({ name: "", phone: "", guests: "2", date: "", time: "" });
+  
   const handleChange = (e) => setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-  const handleSubmit = (e) => { e.preventDefault(); setSubmitted(true); };
+  
+  const showNotification = (type, title, message) => {
+    setNotification({ show: true, type, title, message });
+    setTimeout(() => {
+      setNotification({ show: false, type: 'success', title: '', message: '' });
+    }, 3000);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!form.name || !form.phone || !form.date || !form.time) {
+      showNotification('warning', 'Не все поля заполнены', 'Пожалуйста, заполните все поля формы');
+      return;
+    }
+
+    setIsProcessing(true);
+
+    try {
+      const result = await reservationsAPI.create(form);
+      
+      if (result.success) {
+        setSubmitted(true);
+        showNotification(
+          'success',
+          'Бронирование подтверждено! 🎉',
+          `${form.name}, ждём вас ${new Date(form.date).toLocaleDateString('ru-RU')} в ${form.time}. Наши менеджеры свяжутся с вами.`
+        );
+        setTimeout(() => {
+          setSubmitted(false);
+          setForm({ name: "", phone: "", guests: "2", date: "", time: "" });
+        }, 3000);
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      showNotification(
+        'error',
+        'Ошибка бронирования',
+        'Не удалось забронировать стол. Пожалуйста, попробуйте позже или позвоните нам.'
+      );
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   return (
     <section id="reservation" className="bg-[#0F1113] py-24 relative overflow-hidden">
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-[radial-gradient(circle,rgba(69,193,74,0.07)_0%,transparent_60%)] pointer-events-none" />
+      {/* ... остальной код секции без изменений */}
       <div className="max-w-[800px] mx-auto px-6 md:px-[60px]">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -1219,52 +1326,137 @@ function Reservation() {
         >
           {submitted ? (
             <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-8">
-              <div className="w-20 h-20 rounded-full bg-[#45C14A]/25 border-2 border-[#45C14A] flex items-center justify-center mx-auto mb-6"><CheckCircle size={36} color="#45C14A" /></div>
+              <div className="w-20 h-20 rounded-full bg-[#45C14A]/25 border-2 border-[#45C14A] flex items-center justify-center mx-auto mb-6">
+                <CheckCircle size={36} color="#45C14A" />
+              </div>
               <h3 className="font-['Playfair_Display'] text-white text-3xl font-bold mb-3">Бронирование подтверждено!</h3>
-              <p className="text-white/60 text-sm leading-relaxed mb-8">Мы свяжемся с вами в течение 15 минут для подтверждения.<br />Ждём вас, {form.name}!</p>
-              <button onClick={() => setSubmitted(false)} className="bg-transparent text-[#45C14A] border border-[#45C14A] rounded-full px-7 py-3 text-sm font-semibold">Новое бронирование</button>
+              <p className="text-white/60 text-sm leading-relaxed mb-8">
+                Мы свяжемся с вами в течение 15 минут для подтверждения.<br />
+                Ждём вас, {form.name}!
+              </p>
+              <button 
+                onClick={() => {
+                  setSubmitted(false);
+                  setForm({ name: "", phone: "", guests: "2", date: "", time: "" });
+                }} 
+                className="bg-transparent text-[#45C14A] border border-[#45C14A] rounded-full px-7 py-3 text-sm font-semibold hover:bg-[#45C14A] hover:text-white transition-all duration-300"
+              >
+                Новое бронирование
+              </button>
             </motion.div>
           ) : (
             <form onSubmit={handleSubmit}>
+              {/* ... форма без изменений */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
                 <div className="relative">
                   <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/35" />
-                  <input type="text" name="name" placeholder="Ваше имя" value={form.name} onChange={handleChange} required className="w-full bg-white/5 border border-white/15 rounded-xl py-3.5 pl-11 pr-4 text-white text-sm outline-none focus:border-[#45C14A] focus:bg-[#45C14A]/5 transition-all" />
+                  <input 
+                    type="text" 
+                    name="name" 
+                    placeholder="Ваше имя" 
+                    value={form.name} 
+                    onChange={handleChange} 
+                    required 
+                    className="w-full bg-white/5 border border-white/15 rounded-xl py-3.5 pl-11 pr-4 text-white text-sm outline-none focus:border-[#45C14A] focus:bg-[#45C14A]/5 transition-all" 
+                  />
                 </div>
                 <div className="relative">
                   <Phone size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/35" />
-                  <input type="tel" name="phone" placeholder="Номер телефона" value={form.phone} onChange={handleChange} required className="w-full bg-white/5 border border-white/15 rounded-xl py-3.5 pl-11 pr-4 text-white text-sm outline-none focus:border-[#45C14A] focus:bg-[#45C14A]/5 transition-all" />
+                  <input 
+                    type="tel" 
+                    name="phone" 
+                    placeholder="Номер телефона" 
+                    value={form.phone} 
+                    onChange={handleChange} 
+                    required 
+                    className="w-full bg-white/5 border border-white/15 rounded-xl py-3.5 pl-11 pr-4 text-white text-sm outline-none focus:border-[#45C14A] focus:bg-[#45C14A]/5 transition-all" 
+                  />
                 </div>
                 <div className="relative">
                   <Users size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/35 z-10" />
-                  <select name="guests" value={form.guests} onChange={handleChange} className="w-full bg-white/5 border border-white/15 rounded-xl py-3.5 pl-11 pr-4 text-white text-sm outline-none focus:border-[#45C14A] appearance-none cursor-pointer">
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 15, 20].map((n) => (<option key={n} value={n} className="bg-[#1a1c1f]">{n} {n === 1 ? "гость" : n < 5 ? "гостя" : "гостей"}</option>))}
+                  <select 
+                    name="guests" 
+                    value={form.guests} 
+                    onChange={handleChange} 
+                    className="w-full bg-white/5 border border-white/15 rounded-xl py-3.5 pl-11 pr-4 text-white text-sm outline-none focus:border-[#45C14A] appearance-none cursor-pointer"
+                  >
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 15, 20].map((n) => (
+                      <option key={n} value={n} className="bg-[#1a1c1f]">{n} {n === 1 ? "гость" : n < 5 ? "гостя" : "гостей"}</option>
+                    ))}
                   </select>
                 </div>
                 <div className="relative">
                   <Calendar size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/35" />
-                  <input type="date" name="date" value={form.date} onChange={handleChange} required min={new Date().toISOString().split("T")[0]} className="w-full bg-white/5 border border-white/15 rounded-xl py-3.5 pl-11 pr-4 text-white text-sm outline-none focus:border-[#45C14A] focus:bg-[#45C14A]/5 transition-all [color-scheme:dark]" />
+                  <input 
+                    type="date" 
+                    name="date" 
+                    value={form.date} 
+                    onChange={handleChange} 
+                    required 
+                    min={new Date().toISOString().split("T")[0]} 
+                    className="w-full bg-white/5 border border-white/15 rounded-xl py-3.5 pl-11 pr-4 text-white text-sm outline-none focus:border-[#45C14A] focus:bg-[#45C14A]/5 transition-all [color-scheme:dark]" 
+                  />
                 </div>
                 <div className="relative md:col-span-2">
                   <Clock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/35" />
-                  <select name="time" value={form.time} onChange={handleChange} required className="w-full bg-white/5 border border-white/15 rounded-xl py-3.5 pl-11 pr-4 text-white text-sm outline-none focus:border-[#45C14A] appearance-none cursor-pointer">
+                  <select 
+                    name="time" 
+                    value={form.time} 
+                    onChange={handleChange} 
+                    required 
+                    className="w-full bg-white/5 border border-white/15 rounded-xl py-3.5 pl-11 pr-4 text-white text-sm outline-none focus:border-[#45C14A] appearance-none cursor-pointer"
+                  >
                     <option value="" className="bg-[#1a1c1f]">Выберите время</option>
-                    {["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00"].map((t) => (<option key={t} value={t} className="bg-[#1a1c1f]">{t}</option>))}
+                    {["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00"].map((t) => (
+                      <option key={t} value={t} className="bg-[#1a1c1f]">{t}</option>
+                    ))}
                   </select>
                 </div>
               </div>
-              <button type="submit" className="w-full py-4 rounded-xl bg-gradient-to-r from-[#45C14A] to-[#1F6E33] text-white font-semibold shadow-lg shadow-[#45C14A]/30 hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300">Забронировать стол</button>
+              <button 
+                type="submit" 
+                disabled={isProcessing}
+                className="w-full py-4 rounded-xl bg-gradient-to-r from-[#45C14A] to-[#1F6E33] text-white font-semibold shadow-lg shadow-[#45C14A]/30 hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isProcessing ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Бронирование...</span>
+                  </div>
+                ) : (
+                  'Забронировать стол'
+                )}
+              </button>
               <p className="text-white/35 text-xs text-center mt-4">Мы перезвоним в течение 15 минут для подтверждения бронирования</p>
             </form>
           )}
         </motion.div>
       </div>
+
+      <Notification
+        isOpen={notification.show}
+        onClose={() => setNotification({ show: false, type: 'success', title: '', message: '' })}
+        type={notification.type}
+        title={notification.title}
+        message={notification.message}
+      />
     </section>
   );
 }
 
-// Локация
-function Location() {
+function Location({ hours, loading }) {
+  if (loading) {
+    return (
+      <section className="bg-[#111614] py-24">
+        <div className="text-center">
+          <div className="inline-block w-8 h-8 border-2 border-[#45C14A] border-t-transparent rounded-full animate-spin" />
+        </div>
+      </section>
+    );
+  }
+
+  const displayHours = hours.length > 0 ? hours : fallbackHours;
+
   return (
     <section id="contact" className="bg-[#111614] py-24">
       <div className="max-w-[1280px] mx-auto px-6 md:px-[60px]">
@@ -1301,7 +1493,7 @@ function Location() {
             <div className="bg-white/5 border border-white/10 rounded-2xl p-7">
               <div className="flex items-start gap-4">
                 <div className="w-11 h-11 rounded-xl bg-[#45C14A]/20 border border-[#45C14A]/40 flex items-center justify-center"><Clock size={20} color="#45C14A" /></div>
-                <div className="flex-1"><div className="text-white/50 text-[11px] font-semibold tracking-[0.15em] uppercase mb-4">Часы работы</div>{hours.map((h, i) => (<div key={i} className={`flex justify-between items-center ${i < hours.length - 1 ? "pb-3 mb-3 border-b border-white/10" : ""}`}><span className="text-white/60 text-xs">{h.day}</span><span className="text-[#45C14A] text-xs font-semibold">{h.time}</span></div>))}</div>
+                <div className="flex-1"><div className="text-white/50 text-[11px] font-semibold tracking-[0.15em] uppercase mb-4">Часы работы</div>{displayHours.map((h, i) => (<div key={i} className={`flex justify-between items-center ${i < displayHours.length - 1 ? "pb-3 mb-3 border-b border-white/10" : ""}`}><span className="text-white/60 text-xs">{h.day}</span><span className="text-[#45C14A] text-xs font-semibold">{h.time}</span></div>))}</div>
               </div>
             </div>
           </motion.div>
@@ -1321,7 +1513,6 @@ function Location() {
   );
 }
 
-// Футер
 function Footer({ onNavigate }) {
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
@@ -1377,7 +1568,6 @@ function Footer({ onNavigate }) {
   );
 }
 
-// Плавающая кнопка
 function FloatingButton() {
   const [visible, setVisible] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -1404,7 +1594,6 @@ function FloatingButton() {
     if (el) el.scrollIntoView({ behavior: "smooth" });
   };
 
-  // На мобильных устройствах не показываем плавающую кнопку
   if (isMobile) return null;
 
   return (
@@ -1426,28 +1615,19 @@ function FloatingButton() {
   );
 }
 
-// Главная страница
-function HomePage({ onNavigate }) {
-  return (
-    <>
-      <Hero />
-      <SignatureDishes />
-      <About />
-      <WhyUs />
-      <div id="menu" className="scroll-mt-20">
-        <MenuPreview onNavigate={onNavigate} />
-      </div>
-      <Testimonials />
-      <Reservation />
-      <Location />
-    </>
-  );
-}
-
-// Превью меню на главной
-function MenuPreview({ onNavigate }) {
+function MenuPreview({ onNavigate, dishes, loading }) {
   const { addToCart } = useCart();
   const [addedId, setAddedId] = useState(null);
+
+  if (loading) {
+    return (
+      <section className="bg-[#0F1113] py-24">
+        <div className="text-center">
+          <div className="inline-block w-8 h-8 border-2 border-[#45C14A] border-t-transparent rounded-full animate-spin" />
+        </div>
+      </section>
+    );
+  }
 
   const handleAdd = (dish) => {
     addToCart(dish);
@@ -1471,7 +1651,7 @@ function MenuPreview({ onNavigate }) {
           <p className="text-white/50 text-base font-light max-w-[480px] mx-auto">Попробуйте наши хиты, которые выбирают чаще всего</p>
         </motion.div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {extendedMenuItems.slice(0, 6).map((item, i) => (
+          {dishes.slice(0, 6).map((item, i) => (
             <motion.div
               key={item.id}
               initial={{ opacity: 0, y: 30 }}
@@ -1519,17 +1699,31 @@ function MenuPreview({ onNavigate }) {
   );
 }
 
+function HomePage({ onNavigate, dishes, reviews, features, hours, loading }) {
+  return (
+    <>
+      <Hero />
+      <SignatureDishes dishes={dishes} loading={loading} />
+      <About />
+      <WhyUs features={features} loading={loading} />
+      <div id="menu" className="scroll-mt-20">
+        <MenuPreview onNavigate={onNavigate} dishes={dishes} loading={loading} />
+      </div>
+      <Testimonials reviews={reviews} loading={loading} />
+      <Reservation />
+      <Location hours={hours} loading={loading} />
+    </>
+  );
+}
+
 // ============ ГЛАВНЫЙ КОМПОНЕНТ ============
 export default function App() {
   const [currentPage, setCurrentPage] = useState("home");
+  const { dishes, reviewsData, featuresData, hoursData, loading } = useDataLoader();
 
   const handleNavigate = (page) => {
     setCurrentPage(page);
-    if (page === "home") {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    } else {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   return (
@@ -1537,9 +1731,16 @@ export default function App() {
       <div className="bg-[#0F1113] font-sans">
         <Header currentPage={currentPage} onNavigate={handleNavigate} />
         {currentPage === "home" ? (
-          <HomePage onNavigate={handleNavigate} />
+          <HomePage 
+            onNavigate={handleNavigate} 
+            dishes={dishes} 
+            reviews={reviewsData}
+            features={featuresData}
+            hours={hoursData}
+            loading={loading}
+          />
         ) : (
-          <MenuPage />
+          <MenuPage dishes={dishes} />
         )}
         <Footer onNavigate={handleNavigate} />
         <FloatingButton />
