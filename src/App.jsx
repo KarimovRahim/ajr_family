@@ -168,7 +168,7 @@ const fallbackDishes = [
     id: 1,
     name: "Плов по-домашнему",
     description: "Классический узбекский плов с бараниной, приготовленный по семейному рецепту",
-    price: "65 000 сум",
+    price: "65 сомони",
     tag: "Фирменное блюдо",
     image: "https://images.unsplash.com/photo-1646999415436-fa7fa11cb8c3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=600",
     category: "main"
@@ -177,7 +177,7 @@ const fallbackDishes = [
     id: 2,
     name: "Шашлык из баранины",
     description: "Нежная баранина на углях с маринадом из восточных специй и трав",
-    price: "85 000 сум",
+    price: "85 сомони",
     tag: "Хит",
     image: "https://images.unsplash.com/photo-1771285119318-b342c3ecc51c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=600",
     category: "main"
@@ -186,7 +186,7 @@ const fallbackDishes = [
     id: 3,
     name: "Свежий салат",
     description: "Сезонные овощи с фермы, заправленные оливковым маслом и лимоном",
-    price: "28 000 сум",
+    price: "28 сомони",
     tag: "Новинка",
     image: "https://images.unsplash.com/photo-1761315631465-d1123c77ea72?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=600",
     category: "salad"
@@ -195,7 +195,7 @@ const fallbackDishes = [
     id: 4,
     name: "Лагман",
     description: "Густой наваристый суп с тянутой лапшой, говядиной и овощами",
-    price: "45 000 сум",
+    price: "45 сомони",
     tag: "Традиционное",
     image: "https://images.unsplash.com/photo-1763905145526-6a5e868acc40?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=600",
     category: "soup"
@@ -204,7 +204,7 @@ const fallbackDishes = [
     id: 5,
     name: "Десерт Шахар",
     description: "Изысканный шоколадный торт с орехами и карамельным соусом",
-    price: "32 000 сум",
+    price: "32 сомони",
     tag: "Десерт",
     image: "https://images.unsplash.com/photo-1740594967618-23cd757b9291?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=600",
     category: "dessert"
@@ -213,7 +213,7 @@ const fallbackDishes = [
     id: 6,
     name: "Лепёшка тандыр",
     description: "Свежеиспечённая лепёшка из тандырной печи с кунжутом",
-    price: "12 000 сум",
+    price: "12 сомони",
     tag: "Выпечка",
     image: "https://images.unsplash.com/photo-1763141437626-57697f56e9c2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=600",
     category: "bread"
@@ -337,7 +337,7 @@ function CartDrawer() {
         showNotification(
           'success',
           'Заказ оформлен! 🎉',
-          `Сумма: ${getTotalPrice().toLocaleString()} сум. Наши менеджеры свяжутся с вами для подтверждения.`
+          `Сумма: ${getTotalPrice().toLocaleString()} сомони. Наши менеджеры свяжутся с вами для подтверждения.`
         );
         clearCart();
         setIsCartOpen(false);
@@ -427,7 +427,7 @@ function CartDrawer() {
                               </button>
                             </div>
                             <span className="text-[#45C14A] text-sm font-semibold">
-                              {(getNumericPrice(item.price) * item.quantity).toLocaleString()} сум
+                              {(getNumericPrice(item.price) * item.quantity).toLocaleString()} сомони
                             </span>
                           </div>
                         </div>
@@ -441,7 +441,7 @@ function CartDrawer() {
                 <div className="p-6 border-t border-white/10 bg-white/5">
                   <div className="flex justify-between items-center mb-4">
                     <span className="text-white/60 text-sm">Итого:</span>
-                    <span className="text-white text-2xl font-['Playfair_Display'] font-bold">{getTotalPrice().toLocaleString()} сум</span>
+                    <span className="text-white text-2xl font-['Playfair_Display'] font-bold">{getTotalPrice().toLocaleString()} сомони</span>
                   </div>
                   <button
                     onClick={handleOrder}
@@ -637,7 +637,7 @@ function MenuPage({ dishes }) {
               </div>
               <div className="text-left">
                 <p className="text-white/60 text-xs">Доставка</p>
-                <p className="text-white text-sm font-semibold">Бесплатно от 150 000 сум</p>
+                <p className="text-white text-sm font-semibold">Бесплатно от 150 сомони</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
